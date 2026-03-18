@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GÃ¡sControl PRO - Oficial</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #1e40af; --success: #059669; --danger: #dc2626; --bg: #f8fafc; }
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg); margin: 0; overflow-x: hidden; }
+        
+        /* Telas */
+        #login-screen, #lock-overlay { position: fixed; inset: 0; background: white; z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; }
+        #main-app { display: none; }
+        
+        .header { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: 700; font-size: 1.2rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .container { padding: 12px; max-width: 500px; margin: auto; }
+
+        /* Grade de Estoque */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        .stat-card { background: white; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .stat-label { font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase; display: block; }
+        .stat-val { font-size: 1.5rem; font-weight: 700; color: var(--primary); display: block; margin-top: 5px; }
+        .low { color: var(--danger); }
+
+        /* CartÃµes e Inputs */
+        .card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h2 { font-size: 1rem; margin-top: 0; margin-bottom: 15px; color: #334155; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+        
+        label { font-size: 0.8rem; font-weight: 600; color: #64748b; }
+        input, select { width: 100%; padding: 14px; margin: 8px 0 15px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; background: #fff; }
+        
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+        .btn-sell { background: var(--primary); color: white; }
+        .btn-stock { background: #f1f5f9; color: var(--primary); border: 1px solid var(--primary); margin-top: 10px; }
+        .btn:active { transform: scale(0.97); }
+
+        /* Tabela */
+        .table-wrap { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { text-align: left; padding: 12px; background: #f8fafc; color: #64748b; border-bottom: 1px solid #e2e8f0; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
+
+        /* RelatÃ³rio Mensal */
+        .report-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 15px; margin-top: 10px; }
+        .report-line { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.85rem; color: #166534; }
+        .report-total { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #22c55e; font-weight: 700; color: var(--success); font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+
+<div id="lock-overlay" style="display: none;">
+    <span style="font-size: 4rem;">ðŸ”’</span>
+    <h2 style="color: var(--danger);">SISTEMA DESATIVADO</h2>
+    <p>⚠️ Pagamento pendente ⚠️</p>
+</div>
+
+<div id="login-screen">
+    <span style="font-size: 3rem; margin-bottom: 10px;">🔒</span>
+    <h2 style="margin-bottom: 5px;"> Login</h2>
+    <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 25px;">Digite a senha para aceder</p>
+    <input type="password" id="pass-field" placeholder="Senha de Acesso">
+    <button class="btn btn-sell" onclick="fazerLogin()">Entrar</button>
+</div>
+
+<div id="main-app">
+    <div class="header">UltraGás do Gesir</div>
+    
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card"><span class="stat-label">B2 KG</span><span class="stat-val" id="v-p2">0</span></div>
+            <div class="stat-card"><span class="stat-label">B5 KG</span><span class="stat-val" id="v-p5">0</span></div>
+            <div class="stat-card"><span class="stat-label">B13 KG</span><span class="stat-val" id="v-p13">0</span></div>
+            <div class="stat-card"><span class="stat-label">B45 KG</span><span class="stat-val" id="v-p45">0</span></div>
+        </div>
+
+        <div class="card">
+            <h2>🛒 Nova Operação</h2>
+            <label>Tipo de Gás</label>
+            <select id="i-tipo">
+                <option value="p2">B2 kG (Camping)</option>
+                <option value="p5">B5 KG (Pequeno)</option>
+                <option value="p13" selected>B13 KG (Residencial)</option>
+                <option value="p45">B45 KG (Industrial)</option>
+            </select>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label>Quantidade</label>
+                    <input type="number" id="i-qtd" value="1">
+                </div>
+                <div>
+                    <label>Preço Unit.</label>
+                    <input type="number" id="i-preco" placeholder="0.00">
+                </div>
+            </div>
+
+            <label>Pagamento</label>
+            <select id="i-pag">
+                <option value="Pix">Pix</option>
+                <option value="Dinheiro">Dinheiro</option>
+                <option value="Crédito">Cartão Crédito</option>
+                <option value="Débito">Cartão Débito</option>
+            </select>
+
+            <button class="btn btn-sell" onclick="operar('venda')">FINALIZAR VENDA</button>
+            <button class="btn btn-stock" onclick="operar('entrada')">ABASTECER ESTOQUE</button>
+        </div>
+
+        <div class="card">
+            <h2>📜 Histórico (Últimas 5)</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Produto</th><th>Qtd</th><th>Total</th></tr>
+                    </thead>
+                    <tbody id="lista-vendas"></tbody>
+                </table>
+            </div>
+
+            <h2 style="margin-top: 25px;">📊 Relatório Mensal (<span id="mes-nome">---</span>)</h2>
+            <div class="report-box">
+                <div class="report-line"><span>Qtd. total vendida:</span> <span id="rel-qtd">0</span></div>
+                <div class="report-line"><span>Vendas no Pix:</span> <span id="rel-pix">R$ 0.00</span></div>
+                <div class="report-line"><span>Vendas em Dinheiro:</span> <span id="rel-money">R$ 0.00</span></div>
+                <div class="report-line"><span>Vendas no Crédito:</span> <span id="rel-cred">R$ 0.00</span></div>
+                <div class="report-line"><span>Vendas no Débito:</span> <span id="rel-deb">R$ 0.00</span></div>
+                <div class="report-total"><span>Total Faturado:</span> <span id="rel-total">R$ 0.00</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // CONFIGURAÃ‡Ã•ES DO ADMINISTRADOR
+    // ==========================================
+    const SISTEMA_ATIVO = true;  
+    const SENHA_ACESSO = "1234";  
+    // ==========================================
+
+    let db = JSON.parse(localStorage.getItem('gas_final_db')) || {
+        estoque: { p2: 0, p5: 0, p13: 0, p45: 0 },
+        vendas: []
+    };
+
+    function fazerLogin() {
+        if (!SISTEMA_ATIVO) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('lock-overlay').style.display = 'flex';
+            return;
+        }
+        const input = document.getElementById('pass-field').value;
+        if (input === SENHA_ACESSO) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            render();
+        } else {
+            alert("Senha incorreta!");
+            document.getElementById('pass-field').value = '';
+        }
+    }
+
+    function operar(op) {
+        if (!SISTEMA_ATIVO) return alert("Sistema Bloqueado.");
+        const tipo = document.getElementById('i-tipo').value;
+        const qtd = parseInt(document.getElementById('i-qtd').value);
+        const preco = parseFloat(document.getElementById('i-preco').value) || 0;
+        const pag = document.getElementById('i-pag').value;
+        const agora = new Date();
+
+        if (op === 'entrada') {
+            db.estoque[tipo] += qtd;
+        } else {
+            if (db.estoque[tipo] < qtd) return alert("Estoque insuficiente!");
+            if (preco <= 0) return alert("Informe o preÃ§o!");
+            db.estoque[tipo] -= qtd;
+            db.vendas.unshift({ 
+                tipo, qtd, preco, pag, total: (qtd * preco), 
+                mes: agora.getMonth(), 
+                ano: agora.getFullYear() 
+            });
+        }
+        localStorage.setItem('gas_final_db', JSON.stringify(db));
+        document.getElementById('i-preco').value = '';
+        render();
+    }
+
+    function render() {
+        const agora = new Date();
+        const mesAtual = agora.getMonth();
+        const anoAtual = agora.getFullYear();
+        const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        
+        document.getElementById('mes-nome').innerText = nomesMeses[mesAtual];
+
+        // Atualiza Estoque
+        ['p2', 'p5', 'p13', 'p45'].forEach(p => {
+            const val = db.estoque[p];
+            const el = document.getElementById(`v-${p}`);
+            el.innerText = val;
+            val < 5 ? el.classList.add('low') : el.classList.remove('low');
+        });
+
+        // Atualiza HistÃ³rico
+        const tbody = document.getElementById('lista-vendas');
+        tbody.innerHTML = db.vendas.slice(0, 5).map(v => `
+            <tr>
+                <td><b>${v.tipo.toUpperCase()}</b> <small>(${v.pag})</small></td>
+                <td>${v.qtd}</td>
+                <td>R$ ${v.total.toFixed(2)}</td>
+            </tr>
+        `).join('');
+
+        // CÃLCULO DO RELATÃ“RIO MENSAL DETALHADO
+        let totalQtd = 0;
+        let faturamento = 0;
+        let totalPix = 0;
+        let totalMoney = 0;
+        let totalCred = 0;
+        let totalDeb = 0;
+
+        db.vendas.forEach(v => {
+            if(v.mes === mesAtual && v.ano === anoAtual) {
+                totalQtd += v.qtd;
+                faturamento += v.total;
+                if(v.pag === "Pix") totalPix += v.total;
+                if(v.pag === "Dinheiro") totalMoney += v.total;
+                if(v.pag === "CrÃ©dito") totalCred += v.total;
+                if(v.pag === "DÃ©bito") totalDeb += v.total;
+            }
+        });
+
+        document.getElementById('rel-qtd').innerText = totalQtd;
+        document.getElementById('rel-pix').innerText = `R$ ${totalPix.toFixed(2)}`;
+        document.getElementById('rel-money').innerText = `R$ ${totalMoney.toFixed(2)}`;
+        document.getElementById('rel-cred').innerText = `R$ ${totalCred.toFixed(2)}`;
+        document.getElementById('rel-deb').innerText = `R$ ${totalDeb.toFixed(2)}`;
+        document.getElementById('rel-total').innerText = `R$ ${faturamento.toFixed(2)}`;
+    }
+</script>
+
+</body>
+</html>
